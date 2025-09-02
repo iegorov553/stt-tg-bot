@@ -1,0 +1,12 @@
+[bandit]
+# Конфигурация для Bandit - сканера безопасности Python кода
+
+# Исключаем предупреждения для тестов
+skips = B101,B601
+
+# Исключить проблемы в main.py для Docker deployment
+[bandit.assert_used]
+skips = ["*test*.py"]
+
+[bandit.hardcoded_bind_all_interfaces]
+skips = ["stt_tg_bot/main.py"]
