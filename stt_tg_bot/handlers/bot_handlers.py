@@ -104,8 +104,21 @@ async def handle_audio(message: Message, bot: Bot) -> None:
             await processing_message.edit_text(MESSAGES["download_error"])
             return
 
-        # Скачиваем файл во временную директорию
-        with tempfile.NamedTemporaryFile(suffix=".audio", delete=False) as temp_file:
+        # Определяем правильное расширение файла
+        file_extension = ".ogg"  # По умолчанию для голосовых сообщений
+        if message.audio and message.audio.file_name:
+            # Для аудиофайлов берём оригинальное расширение
+            original_name = Path(message.audio.file_name)
+            file_extension = original_name.suffix or ".mp3"
+        elif message.document and message.document.file_name:
+            # Для документов тоже берём оригинальное расширение
+            original_name = Path(message.document.file_name)
+            file_extension = original_name.suffix or ".mp3"
+
+        # Скачиваем файл во временную директорию с правильным расширением
+        with tempfile.NamedTemporaryFile(
+            suffix=file_extension, delete=False
+        ) as temp_file:
             temp_path = Path(temp_file.name)
 
         try:
