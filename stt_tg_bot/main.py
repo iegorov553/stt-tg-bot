@@ -62,10 +62,34 @@ def run_webhook() -> None:
 def main() -> None:
     """Главная функция приложения."""
     if settings is None:
+        import os
+
         logger.error("Отсутствуют переменные окружения! Проверьте настройки в Railway.")
         logger.error(
             "Необходимые переменные: TELEGRAM_BOT_TOKEN, GROQ_API_KEY, PUBLIC_BASE_URL, WEBHOOK_SECRET, ALLOWLIST"
         )
+        # Диагностика: показываем какие переменные есть
+        env_vars = [
+            k for k in os.environ.keys() if not k.startswith("_") and k.upper() == k
+        ]
+        logger.error(f"Доступные переменные окружения: {sorted(env_vars)}")
+
+        # Проверяем конкретные переменные
+        required_vars = [
+            "TELEGRAM_BOT_TOKEN",
+            "GROQ_API_KEY",
+            "PUBLIC_BASE_URL",
+            "WEBHOOK_SECRET",
+            "ALLOWLIST",
+        ]
+        for var in required_vars:
+            value = os.environ.get(var, "НЕ НАЙДЕНА")
+            logger.error(
+                f"{var}: {value[:10]}..."
+                if value != "НЕ НАЙДЕНА" and len(value) > 10
+                else f"{var}: {value}"
+            )
+
         sys.exit(1)
 
     if settings.use_webhook:
