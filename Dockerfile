@@ -21,6 +21,10 @@ COPY pyproject.toml poetry.lock ./
 
 # Устанавливаем только production зависимости
 RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR \
+    && echo "=== Проверяем установленные пакеты ===" \
+    && pip list | grep -E "(uvicorn|fastapi|aiogram|groq)" \
+    && echo "=== Python path ===" \
+    && python -c "import sys; print('\\n'.join(sys.path))" \
     && pip uninstall -y poetry
 
 # Создаём рабочую директорию
@@ -51,5 +55,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT}/ || exit 1
 
-# Запуск приложения
-CMD ["python", "-m", "stt_tg_bot.main"]
+# Запуск приложения (с проверкой пакетов)
+CMD echo "=== Runtime check ===" && \
+    pip list | grep -E "(uvicorn|fastapi|aiogram|groq)" && \
+    python -c "import uvicorn, fastapi, aiogram, groq; print('All imports successful')" && \
+    python -m stt_tg_bot.main
