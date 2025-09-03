@@ -9,7 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings from environment variables."""
 
-    model_config = SettingsConfigDict(case_sensitive=True, extra="ignore")
+    model_config = SettingsConfigDict(
+        case_sensitive=True, extra="ignore", env_file_encoding="utf-8"
+    )
 
     # Обязательные настройки
     telegram_bot_token: str = Field(..., description="Telegram Bot Token")

@@ -91,6 +91,20 @@ def main() -> None:
         except Exception as e:
             logger.error(f"Ошибка Settings: {e}")
 
+        # Попробуем создать Settings вручную с переменными
+        try:
+            logger.error("Создаём Settings с явными переменными...")
+            Settings(
+                telegram_bot_token=os.environ["TELEGRAM_BOT_TOKEN"],
+                groq_api_key=os.environ["GROQ_API_KEY"],
+                public_base_url=os.environ["PUBLIC_BASE_URL"],
+                webhook_secret=os.environ["WEBHOOK_SECRET"],
+                allowlist=os.environ["ALLOWLIST"],
+            )
+            logger.error("Ручное создание Settings работает!")
+        except Exception as e:
+            logger.error(f"Ошибка ручного создания: {e}")
+
         sys.exit(1)
 
     if settings.use_webhook:
