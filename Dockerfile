@@ -4,10 +4,14 @@ FROM python:3.11-slim as builder
 # Устанавливаем Poetry
 RUN pip install poetry==2.1.4
 
-# Настраиваем Poetry
+# Создаём рабочую директорию для builder
+WORKDIR /app
+
+# Настраиваем Poetry для создания виртуального окружения
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VENV_IN_PROJECT=1 \
-    POETRY_CACHE_DIR=/opt/poetry-cache
+    POETRY_CACHE_DIR=/opt/poetry-cache \
+    POETRY_VENV_PATH=/app/.venv
 
 # Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock ./
@@ -29,7 +33,7 @@ RUN apt-get update && apt-get install -y \
 
 # Копируем виртуальное окружение из builder stage
 ENV VIRTUAL_ENV=/.venv
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+COPY --from=builder /app/.venv ${VIRTUAL_ENV}
 
 # Добавляем виртуальное окружение в PATH
 ENV PATH="/.venv/bin:$PATH"
