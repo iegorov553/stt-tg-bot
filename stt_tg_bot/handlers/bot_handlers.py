@@ -146,27 +146,76 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                 await processing_message.edit_text(MESSAGES["empty_transcription"])
                 return
 
-            # Отправляем результат
-            # Если транскрипция очень длинная, разбиваем на части
-            max_length = 4000  # Оставляем запас от лимита в 4096 символов
+            # Определяем длительность аудио
+            from stt_tg_bot.utils.file_helpers import (
+                create_preview,
+                create_transcription_file,
+                format_transcription_stats,
+                get_audio_duration_from_message,
+                should_send_as_file,
+            )
 
-            if len(transcription) <= max_length:
-                await processing_message.edit_text(transcription)
+            audio_duration = get_audio_duration_from_message(message)
+
+            # Проверяем нужно ли отправить как файл
+            if should_send_as_file(transcription, audio_duration):
+                # Создаём файл с полной транскрипцией
+                file_path = await create_transcription_file(transcription)
+
+                try:
+                    # Создаём превью
+                    preview = create_preview(transcription)
+                    stats = format_transcription_stats(transcription, audio_duration)
+
+                    # Отправляем превью с файлом
+                    preview_message = (
+                        f"📝 **Расшифровка готова!** ({stats})\n\n{preview}"
+                    )
+
+                    # Удаляем служебное сообщение
+                    await processing_message.delete()
+
+                    # Отправляем превью
+                    await message.reply(preview_message, parse_mode="Markdown")
+
+                    # Отправляем файл
+                    from aiogram.types import FSInputFile
+
+                    document = FSInputFile(file_path, filename=file_path.name)
+                    await message.answer_document(
+                        document, caption=f"📎 Полная расшифровка ({stats})"
+                    )
+
+                finally:
+                    # Удаляем временный файл
+                    try:
+                        file_path.unlink()
+                    except Exception:
+                        pass  # Игнорируем ошибки удаления
+
             else:
-                # Удаляем служебное сообщение
-                await processing_message.delete()
+                # Отправляем обычным сообщением для коротких текстов
+                if len(transcription) <= 4000:
+                    await processing_message.edit_text(transcription)
+                else:
+                    # Разбиваем на части (резервный вариант)
+                    await processing_message.delete()
 
-                # Отправляем по частям
-                parts = []
-                for i in range(0, len(transcription), max_length):
-                    part = transcription[i : i + max_length]
-                    parts.append(part)
+                    parts = []
+                    max_length = 4000
+                    for i in range(0, len(transcription), max_length):
+                        part = transcription[i : i + max_length]
+                        parts.append(part)
 
-                for i, part in enumerate(parts):
-                    if i == 0:
-                        await message.reply(f"📝 Часть {i+1}/{len(parts)}:\n\n{part}")
-                    else:
-                        await message.answer(f"📝 Часть {i+1}/{len(parts)}:\n\n{part}")
+                    for i, part in enumerate(parts):
+                        if i == 0:
+                            await message.reply(
+                                f"📝 Часть {i+1}/{len(parts)}:\n\n{part}"
+                            )
+                        else:
+                            await message.answer(
+                                f"📝 Часть {i+1}/{len(parts)}:\n\n{part}"
+                            )
 
         except GroqUnsupportedFormatError:
             logger.warning("Неподдерживаемый формат файла")
