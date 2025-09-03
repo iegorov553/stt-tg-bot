@@ -1,13 +1,17 @@
-# Multi-stage build для оптимизации размера образа
-FROM python:3.11-slim as builder
+# Single-stage build с Poetry
+FROM python:3.11-slim as production
 
-# Устанавливаем Poetry
-RUN pip install poetry==2.1.4
+# Создаём пользователя для запуска приложения
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Создаём рабочую директорию для builder
-WORKDIR /app
+# Устанавливаем системные зависимости и Poetry
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && pip install poetry==2.1.4
 
-# Настраиваем Poetry для установки в системные пути
+# Настраиваем Poetry
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VENV_CREATE=0 \
     POETRY_CACHE_DIR=/opt/poetry-cache
@@ -15,24 +19,9 @@ ENV POETRY_NO_INTERACTION=1 \
 # Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock ./
 
-# Устанавливаем только production зависимости напрямую в систему
-RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
-
-# Production образ
-FROM python:3.11-slim as production
-
-# Создаём пользователя для запуска приложения
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Устанавливаем системные зависимости
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-# Копируем установленные пакеты из builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Устанавливаем только production зависимости
+RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR \
+    && pip uninstall -y poetry
 
 # Создаём рабочую директорию
 WORKDIR /app
