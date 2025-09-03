@@ -27,7 +27,7 @@ share/python-wheels/
 MANIFEST
 
 # Poetry
-poetry.lock
+# poetry.lock - включён для Docker сборки
 
 # Virtual environments
 .venv/
