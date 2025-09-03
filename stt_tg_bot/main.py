@@ -62,35 +62,10 @@ def run_webhook() -> None:
 def main() -> None:
     """Главная функция приложения."""
     if settings is None:
-        import os
-        from stt_tg_bot.config.settings import Settings
-
-        logger.error("Настройки не инициализированы! Диагностика...")
-
-        # Показываем что переменные есть
-        required_vars = [
-            "TELEGRAM_BOT_TOKEN",
-            "GROQ_API_KEY",
-            "PUBLIC_BASE_URL",
-            "WEBHOOK_SECRET",
-            "ALLOWLIST",
-        ]
-        for var in required_vars:
-            value = os.environ.get(var, "НЕ НАЙДЕНА")
-            logger.error(
-                f"{var}: {value[:10]}..."
-                if value != "НЕ НАЙДЕНА" and len(value) > 10
-                else f"{var}: {value}"
-            )
-
-        # Попробуем создать Settings и покажем ошибку
-        try:
-            logger.error("Пытаемся создать Settings...")
-            Settings()
-            logger.error("Settings созданы успешно!")
-        except Exception as e:
-            logger.error(f"Ошибка при создании Settings: {type(e).__name__}: {e}")
-
+        logger.error("Отсутствуют переменные окружения! Проверьте настройки в Railway.")
+        logger.error(
+            "Необходимые переменные: TELEGRAM_BOT_TOKEN, GROQ_API_KEY, PUBLIC_BASE_URL, WEBHOOK_SECRET, ALLOWLIST"
+        )
         sys.exit(1)
 
     if settings.use_webhook:
