@@ -54,13 +54,31 @@ _settings: Settings | None = None
 
 def get_settings() -> Settings:
     """Получить настройки приложения."""
+    import os
+
     global _settings
     if _settings is None:
         try:
-            _settings = Settings()
-        except Exception as e:
+            # Создаём Settings с явным указанием переменных окружения
+            _settings = Settings(
+                telegram_bot_token=os.environ["TELEGRAM_BOT_TOKEN"],
+                groq_api_key=os.environ["GROQ_API_KEY"],
+                public_base_url=os.environ["PUBLIC_BASE_URL"],
+                webhook_secret=os.environ["WEBHOOK_SECRET"],
+                allowlist=os.environ["ALLOWLIST"],
+                # Опциональные с дефолтами
+                use_webhook=os.environ.get("USE_WEBHOOK", "true").lower() == "true",
+                port=int(os.environ.get("PORT", "8080")),
+                read_timeout_sec=int(os.environ.get("READ_TIMEOUT_SEC", "120")),
+                groq_model_primary=os.environ.get(
+                    "GROQ_MODEL_PRIMARY", "whisper-large-v3-turbo"
+                ),
+                groq_model_fallback=os.environ.get(
+                    "GROQ_MODEL_FALLBACK", "whisper-large-v3"
+                ),
+            )
+        except KeyError as e:
             # В тестах могут отсутствовать переменные окружения
-            # Возвращаем объект с минимальными настройками для тестирования
             if "test" in sys.modules or "pytest" in sys.modules:
                 _settings = Settings(  # nosec B106 - тестовые данные для unit-тестов
                     telegram_bot_token="test_token",
@@ -71,6 +89,8 @@ def get_settings() -> Settings:
                 )
             else:
                 raise e
+        except Exception as e:
+            raise e
     return _settings
 
 
