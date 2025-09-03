@@ -115,7 +115,9 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                 large_file_message = MESSAGES["file_too_large"].format(
                     compress_url=compress_url
                 )
-                await processing_message.edit_text(large_file_message)
+                await processing_message.edit_text(
+                    large_file_message, disable_web_page_preview=True
+                )
             else:
                 await processing_message.edit_text(MESSAGES["download_error"])
             return
@@ -143,7 +145,9 @@ async def handle_audio(message: Message, bot: Bot) -> None:
             large_file_message = MESSAGES["file_too_large"].format(
                 compress_url=compress_url
             )
-            await processing_message.edit_text(large_file_message)
+            await processing_message.edit_text(
+                large_file_message, disable_web_page_preview=True
+            )
             return
 
         # Определяем правильное расширение файла
