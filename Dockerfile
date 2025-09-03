@@ -12,8 +12,8 @@ ENV POETRY_NO_INTERACTION=1 \
 # Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock ./
 
-# Устанавливаем только production зависимости
-RUN poetry install --only=main && rm -rf $POETRY_CACHE_DIR
+# Устанавливаем только production зависимости (без установки самого проекта)
+RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Production образ
 FROM python:3.11-slim as production
