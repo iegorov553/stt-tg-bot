@@ -1,3 +1,4 @@
+# Railway cache buster
 FROM python:3.11-slim
 
 # Устанавливаем системные зависимости
