@@ -7,16 +7,15 @@ RUN pip install poetry==2.1.4
 # Создаём рабочую директорию для builder
 WORKDIR /app
 
-# Настраиваем Poetry для создания виртуального окружения
+# Настраиваем Poetry для установки в системные пути
 ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VENV_IN_PROJECT=1 \
-    POETRY_CACHE_DIR=/opt/poetry-cache \
-    POETRY_VENV_PATH=/app/.venv
+    POETRY_VENV_CREATE=0 \
+    POETRY_CACHE_DIR=/opt/poetry-cache
 
 # Копируем файлы зависимостей
 COPY pyproject.toml poetry.lock ./
 
-# Устанавливаем только production зависимости (без установки самого проекта)
+# Устанавливаем только production зависимости напрямую в систему
 RUN poetry install --only=main --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Production образ
@@ -31,12 +30,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Копируем виртуальное окружение из builder stage
-ENV VIRTUAL_ENV=/.venv
-COPY --from=builder /app/.venv ${VIRTUAL_ENV}
-
-# Добавляем виртуальное окружение в PATH
-ENV PATH="/.venv/bin:$PATH"
+# Копируем установленные пакеты из builder stage
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Создаём рабочую директорию
 WORKDIR /app
