@@ -118,6 +118,27 @@ async def handle_audio(message: Message, bot: Bot) -> None:
             await processing_message.edit_text(MESSAGES["download_error"])
             return
 
+        # Проверяем размер файла (20 МБ = 20 * 1024 * 1024 байт)
+        max_file_size = 20 * 1024 * 1024
+        if file_info.file_size and file_info.file_size > max_file_size:
+            logger.info(f"Файл слишком большой: {file_info.file_size} байт")
+
+            # Получаем расширение файла для генерации URL
+            from stt_tg_bot.utils.file_helpers import (
+                get_file_extension_from_message,
+                generate_compression_url,
+            )
+
+            file_extension = get_file_extension_from_message(message)
+            compress_url = generate_compression_url(file_extension)
+
+            # Отправляем сообщение с предложением сжать файл
+            large_file_message = MESSAGES["file_too_large"].format(
+                compress_url=compress_url
+            )
+            await processing_message.edit_text(large_file_message)
+            return
+
         # Определяем правильное расширение файла
         file_extension = ".ogg"  # По умолчанию для голосовых сообщений
         if message.audio and message.audio.file_name:

@@ -130,3 +130,42 @@ def get_audio_duration_from_message(message) -> float:
         return 0.0
 
     return 0.0
+
+
+def get_file_extension_from_message(message) -> str:
+    """
+    Извлекает расширение файла из сообщения Telegram.
+
+    Args:
+        message: Объект сообщения aiogram
+
+    Returns:
+        Расширение файла без точки (например: 'mp3', 'ogg', 'm4a')
+    """
+    if message.voice:
+        return "ogg"  # Голосовые сообщения всегда в формате OGG
+    elif message.audio and message.audio.file_name:
+        # Для аудиофайлов берём оригинальное расширение
+        original_name = Path(message.audio.file_name)
+        extension = original_name.suffix.lower().lstrip(".")
+        return extension if extension else "mp3"  # По умолчанию MP3
+    elif message.document and message.document.file_name:
+        # Для документов тоже берём оригинальное расширение
+        original_name = Path(message.document.file_name)
+        extension = original_name.suffix.lower().lstrip(".")
+        return extension if extension else "mp3"  # По умолчанию MP3
+
+    return "mp3"  # Безопасное значение по умолчанию
+
+
+def generate_compression_url(file_extension: str) -> str:
+    """
+    Генерирует URL для сжатия файла на сервисе EzyZip.
+
+    Args:
+        file_extension: Расширение файла без точки
+
+    Returns:
+        URL для сжатия файла соответствующего формата
+    """
+    return f"https://www.ezyzip.com/compress-{file_extension}-file-size.html"
