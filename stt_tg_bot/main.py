@@ -63,18 +63,11 @@ def main() -> None:
     """Главная функция приложения."""
     if settings is None:
         import os
+        from stt_tg_bot.config.settings import Settings
 
-        logger.error("Отсутствуют переменные окружения! Проверьте настройки в Railway.")
-        logger.error(
-            "Необходимые переменные: TELEGRAM_BOT_TOKEN, GROQ_API_KEY, PUBLIC_BASE_URL, WEBHOOK_SECRET, ALLOWLIST"
-        )
-        # Диагностика: показываем какие переменные есть
-        env_vars = [
-            k for k in os.environ.keys() if not k.startswith("_") and k.upper() == k
-        ]
-        logger.error(f"Доступные переменные окружения: {sorted(env_vars)}")
+        logger.error("Настройки не инициализированы! Диагностика...")
 
-        # Проверяем конкретные переменные
+        # Показываем что переменные есть
         required_vars = [
             "TELEGRAM_BOT_TOKEN",
             "GROQ_API_KEY",
@@ -89,6 +82,14 @@ def main() -> None:
                 if value != "НЕ НАЙДЕНА" and len(value) > 10
                 else f"{var}: {value}"
             )
+
+        # Попробуем создать Settings и покажем ошибку
+        try:
+            logger.error("Пытаемся создать Settings...")
+            Settings()
+            logger.error("Settings созданы успешно!")
+        except Exception as e:
+            logger.error(f"Ошибка при создании Settings: {type(e).__name__}: {e}")
 
         sys.exit(1)
 
