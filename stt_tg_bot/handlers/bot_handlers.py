@@ -93,10 +93,24 @@ async def handle_audio(message: Message, bot: Bot) -> None:
         # Получаем информацию о файле
         try:
             file_info = await bot.get_file(file_id)
-            logger.info(f"Информация о файле: {file_info.file_path}")
+            logger.info(
+                f"Информация о файле: {file_info.file_path}, размер: {file_info.file_size}"
+            )
         except Exception as e:
-            logger.error(f"Не удалось получить информацию о файле: {e}")
-            await processing_message.edit_text(MESSAGES["download_error"])
+            error_msg = str(e)
+            logger.error(f"Не удалось получить информацию о файле: {error_msg}")
+
+            # Специальная обработка для больших файлов
+            if "file is too big" in error_msg.lower():
+                await processing_message.edit_text(
+                    "📁 Файл слишком большой для стандартного Bot API (лимит 20 МБ).\n\n"
+                    "💡 Для файлов больше 20 МБ:\n"
+                    "• Сожмите файл в аудиоредакторе\n"
+                    "• Разделите на части до 20 МБ каждая\n"
+                    "• Или запишите более короткое сообщение"
+                )
+            else:
+                await processing_message.edit_text(MESSAGES["download_error"])
             return
 
         if not file_info.file_path:
