@@ -169,3 +169,34 @@ def generate_compression_url(file_extension: str) -> str:
         URL для сжатия файла соответствующего формата
     """
     return f"https://www.ezyzip.com/compress-{file_extension}-file-size.html"
+
+
+async def create_summary_or_preview(transcription: str) -> tuple[str, bool]:
+    """
+    Создаёт саммари через OpenAI или фоллбек к превью.
+
+    Args:
+        transcription: Полный текст расшифровки
+
+    Returns:
+        Кортеж (текст саммари/превью, использовался_ли_openai)
+    """
+    try:
+        from stt_tg_bot.services.openai_client import generate_transcription_summary
+
+        # Пытаемся сгенерировать саммари через OpenAI
+        summary = await generate_transcription_summary(transcription)
+
+        if summary:
+            return summary, True
+
+    except Exception as e:
+        # Логируем ошибку, но продолжаем с фоллбеком
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"OpenAI summary generation failed: {e}")
+
+    # Фоллбек к обычному превью
+    preview = create_preview(transcription)
+    return preview, False

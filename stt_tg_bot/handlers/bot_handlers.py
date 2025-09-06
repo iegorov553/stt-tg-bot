@@ -180,7 +180,6 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
             # Определяем длительность аудио
             from stt_tg_bot.utils.file_helpers import (
-                create_preview,
                 create_transcription_file,
                 format_transcription_stats,
                 get_audio_duration_from_message,
@@ -195,14 +194,25 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                 file_path = await create_transcription_file(transcription)
 
                 try:
-                    # Создаём превью
-                    preview = create_preview(transcription)
+                    # Создаём саммари или превью через OpenAI
+                    from stt_tg_bot.utils.file_helpers import create_summary_or_preview
+
+                    preview_content, used_openai = await create_summary_or_preview(
+                        transcription
+                    )
                     stats = format_transcription_stats(transcription, audio_duration)
 
-                    # Отправляем превью с файлом
-                    preview_message = (
-                        f"📝 **Расшифровка готова!** ({stats})\n\n{preview}"
-                    )
+                    # Формируем сообщение в зависимости от того, использовался ли OpenAI
+                    if used_openai:
+                        preview_message = (
+                            f"📝 **Расшифровка готова!** ({stats})\n\n"
+                            f"📋 **Краткое содержание:**\n{preview_content}"
+                        )
+                    else:
+                        preview_message = (
+                            f"📝 **Расшифровка готова!** ({stats})\n\n"
+                            f"⚠️ OpenAI API недоступен, показываю превью:\n\n{preview_content}"
+                        )
 
                     # Удаляем служебное сообщение
                     await processing_message.delete()

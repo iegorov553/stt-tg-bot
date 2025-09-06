@@ -37,6 +37,11 @@ class Settings(BaseSettings):
         default="whisper-large-v3", description="Fallback Groq model"
     )
 
+    # Опциональные настройки для OpenAI
+    openai_api_key: str | None = Field(
+        default=None, description="OpenAI API Key for summary generation"
+    )
+
     @property
     def parsed_allowlist(self) -> set[str]:
         """Parse allowlist string into set of user IDs and usernames."""
@@ -76,6 +81,7 @@ def get_settings() -> Settings:
                 groq_model_fallback=os.environ.get(
                     "GROQ_MODEL_FALLBACK", "whisper-large-v3"
                 ),
+                openai_api_key=os.environ.get("OPENAI_API_KEY"),
             )
         except KeyError as e:
             # В тестах могут отсутствовать переменные окружения
