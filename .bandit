@@ -1,8 +1,8 @@
 [bandit]
 # Конфигурация для Bandit - сканера безопасности Python кода
 
-# Исключаем предупреждения для тестов
-skips = B101,B601
+# Исключаем предупреждения для тестов и jitter в retry логике
+skips = B101,B601,B311
 
 # Исключить проблемы в main.py для Docker deployment
 [bandit.assert_used]
