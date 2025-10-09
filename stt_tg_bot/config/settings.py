@@ -3,7 +3,21 @@
 import sys
 
 from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ModuleNotFoundError:  # pragma: no cover - executed only when dependency missing
+    from pydantic import BaseModel
+
+    class SettingsConfigDict(dict):
+        """Fallback stub for SettingsConfigDict when pydantic-settings is absent."""
+
+        pass
+
+    class BaseSettings(BaseModel):
+        """Fallback stub that mimics BaseSettings for testing environments."""
+
+        model_config: SettingsConfigDict = SettingsConfigDict()
 
 
 class Settings(BaseSettings):

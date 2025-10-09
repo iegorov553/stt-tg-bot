@@ -85,6 +85,8 @@ poetry run pytest
 poetry run pytest --cov=stt_tg_bot --cov-report=term-missing
 ```
 
+> **Tip:** The unit test suite now ships with light-weight fallbacks for optional packages (for example, `aiogram` or `pydantic-settings`). Install the real dependencies from `requirements.txt` to exercise the exact production wiring.
+
 ### Code Quality
 
 ```bash

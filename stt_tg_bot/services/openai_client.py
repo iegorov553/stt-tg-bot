@@ -89,7 +89,7 @@ class OpenAIClient:
             "top_p": 1.0,
             "presence_penalty": 0.0,
             "frequency_penalty": 0.2,
-            "max_tokens": max_tokens,
+            "max_completion_tokens": max_tokens,
         }
         return await self._post_with_retries(
             f"{self.base_url}/chat/completions", payload
