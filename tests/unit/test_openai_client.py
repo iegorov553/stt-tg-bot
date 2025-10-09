@@ -23,6 +23,10 @@ async def test_post_chat_uses_max_completion_tokens(monkeypatch):
     assert err is None
     assert captured_payload["max_completion_tokens"] == 256
     assert "max_tokens" not in captured_payload
+    assert "temperature" not in captured_payload
+    assert "top_p" not in captured_payload
+    assert "presence_penalty" not in captured_payload
+    assert "frequency_penalty" not in captured_payload
 
 
 @pytest.mark.asyncio

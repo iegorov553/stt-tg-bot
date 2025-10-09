@@ -85,10 +85,6 @@ class OpenAIClient:
                 },
                 {"role": "user", "content": prompt},
             ],
-            "temperature": 0.2,
-            "top_p": 1.0,
-            "presence_penalty": 0.0,
-            "frequency_penalty": 0.2,
             "max_completion_tokens": max_tokens,
         }
         return await self._post_with_retries(
@@ -115,7 +111,6 @@ class OpenAIClient:
                 {"role": "user", "content": prompt},
             ],
             "max_output_tokens": max_tokens,
-            "temperature": 0.2,
             # (опционально) минимальное «мышление» у reasoning-моделей для скорости:
             "reasoning": {"effort": "minimal"},
         }

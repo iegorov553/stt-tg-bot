@@ -14,15 +14,16 @@ from stt_tg_bot.services.groq_client import (
     GroqUnsupportedFormatError,
     transcribe_with_fallback,
 )
-from stt_tg_bot.utils.access_control import (
-    check_message_access,
-    send_access_denied_message,
-)
+from stt_tg_bot.utils.access_control import check_message_access, send_access_denied_message
 from stt_tg_bot.utils.messages import MESSAGES
+from stt_tg_bot.utils.text_chunks import TELEGRAM_MAX_MESSAGE_LENGTH, split_text
 
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+CHUNK_HEADER_TEMPLATE = "📝 Часть {current}/{total}:\n\n"
+CHUNK_HEADER_RESERVE = len("📝 Часть 999/999:\n\n")
 
 
 @router.message(Command("start"))  # type: ignore[misc]
@@ -70,6 +71,7 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
     # Отправляем сообщение о начале обработки
     processing_message = await message.reply(MESSAGES["processing"])
+    processing_message_deleted = False
 
     # Включаем typing индикатор
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -216,9 +218,17 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
                     # Удаляем служебное сообщение
                     await processing_message.delete()
+                    processing_message_deleted = True
 
                     # Отправляем превью
-                    await message.reply(preview_message, parse_mode="Markdown")
+                    preview_chunks = split_text(
+                        preview_message, max_len=TELEGRAM_MAX_MESSAGE_LENGTH
+                    )
+                    if not preview_chunks:
+                        preview_chunks = [preview_message]
+                    for idx, chunk in enumerate(preview_chunks):
+                        send_method = message.reply if idx == 0 else message.answer
+                        await send_method(chunk, parse_mode="Markdown")
 
                     # Отправляем файл
                     from aiogram.types import FSInputFile
@@ -237,27 +247,24 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
             else:
                 # Отправляем обычным сообщением для коротких текстов
-                if len(transcription) <= 4000:
+                if len(transcription) <= TELEGRAM_MAX_MESSAGE_LENGTH:
                     await processing_message.edit_text(transcription)
                 else:
                     # Разбиваем на части (резервный вариант)
                     await processing_message.delete()
+                    processing_message_deleted = True
 
-                    parts = []
-                    max_length = 4000
-                    for i in range(0, len(transcription), max_length):
-                        part = transcription[i : i + max_length]
-                        parts.append(part)
-
-                    for i, part in enumerate(parts):
-                        if i == 0:
-                            await message.reply(
-                                f"📝 Часть {i+1}/{len(parts)}:\n\n{part}"
-                            )
-                        else:
-                            await message.answer(
-                                f"📝 Часть {i+1}/{len(parts)}:\n\n{part}"
-                            )
+                    chunks = split_text(
+                        transcription,
+                        max_len=TELEGRAM_MAX_MESSAGE_LENGTH - CHUNK_HEADER_RESERVE,
+                    )
+                    total_parts = max(1, len(chunks))
+                    for index, chunk in enumerate(chunks, start=1):
+                        header = CHUNK_HEADER_TEMPLATE.format(
+                            current=index, total=total_parts
+                        )
+                        send_method = message.reply if index == 1 else message.answer
+                        await send_method(f"{header}{chunk}")
 
         except GroqUnsupportedFormatError:
             logger.warning("Неподдерживаемый формат файла")
@@ -273,7 +280,8 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
         except Exception as e:
             logger.error(f"Неожиданная ошибка при обработке аудио: {e}")
-            await processing_message.edit_text(MESSAGES["general_error"])
+            if not processing_message_deleted:
+                await processing_message.edit_text(MESSAGES["general_error"])
 
         finally:
             # Удаляем временный файл
@@ -283,10 +291,11 @@ async def handle_audio(message: Message, bot: Bot) -> None:
 
     except Exception as e:
         logger.error(f"Критическая ошибка в обработчике аудио: {e}")
-        try:
-            await processing_message.edit_text(MESSAGES["general_error"])
-        except Exception:  # nosec B110 - игнорируем ошибки UI для стабильности
-            pass  # Игнорируем ошибки при редактировании сообщения
+        if not processing_message_deleted:
+            try:
+                await processing_message.edit_text(MESSAGES["general_error"])
+            except Exception:  # nosec B110 - игнорируем ошибки UI для стабильности
+                pass  # Игнорируем ошибки при редактировании сообщения
 
 
 @router.message()  # type: ignore[misc]
