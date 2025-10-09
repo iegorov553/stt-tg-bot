@@ -1,9 +1,22 @@
 """Pytest configuration and fixtures."""
 
+from dataclasses import dataclass
 from unittest.mock import MagicMock
 
 import pytest
-from aiogram.types import User
+
+try:
+    from aiogram.types import User
+except ModuleNotFoundError:  # pragma: no cover - executed only when aiogram absent
+    @dataclass
+    class User:
+        """Minimal stub to satisfy tests when aiogram is unavailable."""
+
+        id: int
+        is_bot: bool
+        first_name: str
+        last_name: str | None = None
+        username: str | None = None
 
 
 @pytest.fixture
