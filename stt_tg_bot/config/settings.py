@@ -9,15 +9,18 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - executed only when dependency missing
     from pydantic import BaseModel
 
-    class SettingsConfigDict(dict):
+    class _SettingsConfigDict(dict):
         """Fallback stub for SettingsConfigDict when pydantic-settings is absent."""
 
         pass
 
-    class BaseSettings(BaseModel):
+    class _BaseSettings(BaseModel):
         """Fallback stub that mimics BaseSettings for testing environments."""
 
-        model_config: SettingsConfigDict = SettingsConfigDict()
+        model_config: "_SettingsConfigDict" = _SettingsConfigDict()
+
+    SettingsConfigDict = _SettingsConfigDict  # type: ignore[assignment]
+    BaseSettings = _BaseSettings  # type: ignore[assignment]
 
 
 class Settings(BaseSettings):
@@ -49,6 +52,9 @@ class Settings(BaseSettings):
     )
     groq_model_fallback: str = Field(
         default="whisper-large-v3", description="Fallback Groq model"
+    )
+    groq_language: str | None = Field(
+        default=None, description="Optional language override for Groq transcription"
     )
 
     # Опциональные настройки для OpenAI
@@ -95,6 +101,7 @@ def get_settings() -> Settings:
                 groq_model_fallback=os.environ.get(
                     "GROQ_MODEL_FALLBACK", "whisper-large-v3"
                 ),
+                groq_language=os.environ.get("GROQ_LANGUAGE"),
                 openai_api_key=os.environ.get("OPENAI_API_KEY"),
             )
         except KeyError as e:

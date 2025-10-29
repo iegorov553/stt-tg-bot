@@ -19,6 +19,7 @@ class TestMessages:
             "download_error",
             "general_error",
             "empty_transcription",
+            "file_too_large",
         }
 
         assert set(MESSAGES.keys()) == expected_keys
@@ -37,6 +38,7 @@ class TestMessages:
         assert "команды" in MESSAGES["help"]
         assert "/start" in MESSAGES["help"]
         assert "/help" in MESSAGES["help"]
+        assert "Автоматическое распознавание" in MESSAGES["help"]
 
         assert "Обрабатываю" in MESSAGES["processing"]
 

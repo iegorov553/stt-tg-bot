@@ -50,6 +50,8 @@ class TestGroqWhisperClient:
 
         assert result == "Это тестовая транскрипция."
         self.client.client.audio.transcriptions.create.assert_called_once()
+        _, kwargs = self.client.client.audio.transcriptions.create.call_args
+        assert "language" not in kwargs
 
     @pytest.mark.asyncio
     @patch("stt_tg_bot.services.groq_client.aiofiles.open")
@@ -142,6 +144,30 @@ class TestGroqWhisperClient:
         result = await self.client.transcribe_audio(self.temp_path, use_fallback=True)
 
         assert result == "Fallback transcription"
+
+    @pytest.mark.asyncio
+    @patch("stt_tg_bot.services.groq_client.aiofiles.open")
+    async def test_transcribe_audio_with_explicit_language(
+        self, mock_aiofiles_open: MagicMock, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test transcription when explicit language is configured."""
+        monkeypatch.setattr(
+            "stt_tg_bot.services.groq_client.settings.groq_language",
+            "en",
+            raising=False,
+        )
+
+        mock_file = AsyncMock()
+        mock_aiofiles_open.return_value.__aenter__.return_value = mock_file
+        self.client.client.audio.transcriptions.create = AsyncMock(
+            return_value="Test transcription"
+        )
+
+        result = await self.client.transcribe_audio(self.temp_path)
+
+        assert result == "Test transcription"
+        _, kwargs = self.client.client.audio.transcriptions.create.call_args
+        assert kwargs.get("language") == "en"
 
 
 class TestTranscribeWithFallback:

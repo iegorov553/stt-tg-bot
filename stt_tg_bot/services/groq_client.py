@@ -73,11 +73,18 @@ class GroqWhisperClient:
                 # Читаем содержимое файла для передачи в Groq API
                 file_content = await audio_file.read()
 
+                request_payload: dict[str, object] = {
+                    "file": (audio_file_path.name, file_content),
+                    "model": model,
+                    "response_format": "text",
+                }
+
+                language = getattr(settings, "groq_language", None)
+                if language:
+                    request_payload["language"] = language
+
                 transcription = await self.client.audio.transcriptions.create(
-                    file=(audio_file_path.name, file_content),
-                    model=model,
-                    language="ru",
-                    response_format="text",
+                    **request_payload
                 )
 
                 transcription_text = str(transcription)
@@ -124,6 +131,8 @@ async def transcribe_with_fallback(audio_file_path: Path) -> str:
         # Пытаемся с основной моделью
         return await client.transcribe_audio(audio_file_path, use_fallback=False)
 
+    except GroqUnsupportedFormatError:
+        raise
     except (GroqServiceUnavailableError, GroqTranscriptionError) as primary_error:
         logger.warning(f"Основная модель недоступна: {primary_error}")
 

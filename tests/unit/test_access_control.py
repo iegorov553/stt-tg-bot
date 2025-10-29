@@ -1,6 +1,6 @@
 """Tests for access control utilities."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram.types import Message, User
@@ -100,10 +100,10 @@ class TestAccessControl:
     async def test_send_access_denied_message(self) -> None:
         """Test send_access_denied_message."""
         message = MagicMock(spec=Message)
-        message.reply = MagicMock(return_value=None)
+        message.reply = AsyncMock(return_value=None)
 
         await send_access_denied_message(message)
 
-        message.reply.assert_called_once_with(
-            "Доступ ограничен. Обратитесь к владельцу бота."
+        message.reply.assert_awaited_once_with(
+            "🚫 Доступ ограничен. Обратитесь к владельцу бота."
         )

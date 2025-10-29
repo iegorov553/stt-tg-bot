@@ -6,6 +6,7 @@ A Speech-to-Text Telegram bot using Groq Whisper API for audio transcription.
 
 - 🎤 **Audio Transcription**: Supports voice messages, audio files, and documents
 - 🌐 **Multiple Formats**: OGG, OPUS, MP3, WAV, M4A and more
+- 🌍 **Automatic Language Detection**: Recognizes any language supported by Groq Whisper
 - 🚀 **Fast Processing**: Groq Whisper Large V3 Turbo with fallback support
 - 🔒 **Access Control**: User allowlist with ID and username support
 - 📱 **Webhook Support**: Production-ready deployment on Railway
@@ -67,6 +68,7 @@ poetry run python -m stt_tg_bot.main
 - `READ_TIMEOUT_SEC`: HTTP timeout (default: `120`)
 - `GROQ_MODEL_PRIMARY`: Primary model (default: `whisper-large-v3-turbo`)
 - `GROQ_MODEL_FALLBACK`: Fallback model (default: `whisper-large-v3`)
+- `GROQ_LANGUAGE`: Optional language override for transcription (default: auto-detect)
 
 ## Commands
 
