@@ -3,6 +3,7 @@
 from aiogram.types import Message, User
 
 from stt_tg_bot.config.settings import settings
+from stt_tg_bot.utils.messages import MESSAGES
 
 
 def is_user_allowed(user: User) -> bool:
@@ -54,5 +55,4 @@ async def send_access_denied_message(message: Message) -> None:
     Args:
         message: Исходное сообщение пользователя
     """
-    ACCESS_DENIED_MESSAGE = "Доступ ограничен. Обратитесь к владельцу бота."
-    await message.reply(ACCESS_DENIED_MESSAGE)
+    await message.reply(MESSAGES["access_denied"])

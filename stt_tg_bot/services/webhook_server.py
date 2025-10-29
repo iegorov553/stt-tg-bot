@@ -94,7 +94,11 @@ class WebhookApp:
             try:
                 # Получаем JSON данные
                 json_data = await request.json()
+            except ValueError as json_error:
+                logger.warning(f"Некорректный JSON в запросе: {json_error}")
+                raise HTTPException(status_code=422, detail="Invalid JSON payload")
 
+            try:
                 # Создаём Update объект
                 update = Update.model_validate(json_data)
 

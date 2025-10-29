@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 
 TELEGRAM_MAX_MESSAGE_LENGTH = 4096
@@ -49,8 +49,11 @@ def split_text(
 
 
 async def send_chunked_messages(
-    send_fn: callable, text: str, prefix: str = "", max_len: int = TELEGRAM_MAX_MESSAGE_LENGTH
-) -> Iterable:
+    send_fn: Callable[[str], Awaitable[Any]],
+    text: str,
+    prefix: str = "",
+    max_len: int = TELEGRAM_MAX_MESSAGE_LENGTH,
+) -> AsyncIterator[Any]:
     """
     Send text split into Telegram-friendly chunks using provided async function.
 
