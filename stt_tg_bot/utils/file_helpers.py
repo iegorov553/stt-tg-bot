@@ -168,7 +168,7 @@ def generate_compression_url(file_extension: str) -> str:
     Returns:
         URL для сжатия файла соответствующего формата
     """
-    return f"https://www.ezyzip.com/compress-{file_extension}-file-size.html"
+    return f"https://www.ezyzip.com/compress-{file_extension}-below-20MB-online.html"
 
 
 async def create_summary_or_preview(transcription: str) -> tuple[str, bool]:
