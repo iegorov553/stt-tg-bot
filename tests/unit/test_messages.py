@@ -20,6 +20,14 @@ class TestMessages:
             "general_error",
             "empty_transcription",
             "file_too_large",
+            "tts_processing",
+            "tts_rate_limited",
+            "tts_missing_api_key",
+            "tts_text_too_long",
+            "tts_empty_text",
+            "tts_request_error",
+            "tts_service_unavailable",
+            "tts_general_error",
         }
 
         assert set(MESSAGES.keys()) == expected_keys
@@ -33,7 +41,7 @@ class TestMessages:
     def test_specific_messages_content(self) -> None:
         """Test specific message content."""
         assert "Привет" in MESSAGES["start"]
-        assert "расшифровки" in MESSAGES["start"]
+        assert "озвучки" in MESSAGES["start"]
 
         assert "команды" in MESSAGES["help"]
         assert "/start" in MESSAGES["help"]

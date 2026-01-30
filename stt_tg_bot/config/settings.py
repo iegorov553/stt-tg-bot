@@ -1,26 +1,29 @@
 """Application settings configuration."""
 
 import sys
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
-try:
+if TYPE_CHECKING:
     from pydantic_settings import BaseSettings, SettingsConfigDict
-except ModuleNotFoundError:  # pragma: no cover - executed only when dependency missing
-    from pydantic import BaseModel
+else:
+    try:
+        from pydantic_settings import BaseSettings, SettingsConfigDict
+    except (
+        ModuleNotFoundError
+    ):  # pragma: no cover - executed only when dependency missing
+        from pydantic import BaseModel
 
-    class _SettingsConfigDict(dict):
-        """Fallback stub for SettingsConfigDict when pydantic-settings is absent."""
+        class SettingsConfigDict(dict):
+            """Fallback stub for SettingsConfigDict when pydantic-settings is absent."""
 
-        pass
+            pass
 
-    class _BaseSettings(BaseModel):
-        """Fallback stub that mimics BaseSettings for testing environments."""
+        class BaseSettings(BaseModel):
+            """Fallback stub that mimics BaseSettings for testing environments."""
 
-        model_config: "_SettingsConfigDict" = _SettingsConfigDict()
-
-    SettingsConfigDict = _SettingsConfigDict  # type: ignore[assignment]
-    BaseSettings = _BaseSettings  # type: ignore[assignment]
+            model_config: "SettingsConfigDict" = SettingsConfigDict()
 
 
 class Settings(BaseSettings):
@@ -59,7 +62,23 @@ class Settings(BaseSettings):
 
     # Опциональные настройки для OpenAI
     openai_api_key: str | None = Field(
-        default=None, description="OpenAI API Key for summary generation"
+        default=None, description="OpenAI API Key for summaries and TTS"
+    )
+    openai_tts_model: str = Field(
+        default="gpt-4o-mini-tts", description="OpenAI TTS model"
+    )
+    openai_tts_voice: str = Field(default="coral", description="OpenAI TTS voice")
+    openai_tts_response_format: str = Field(
+        default="opus", description="OpenAI TTS response format"
+    )
+    openai_tts_max_chars: int = Field(
+        default=4096, description="Maximum characters for TTS input"
+    )
+    openai_tts_rate_limit_per_minute: int = Field(
+        default=5, description="TTS requests per minute limit"
+    )
+    openai_tts_rate_limit_window_sec: int = Field(
+        default=60, description="TTS rate limit window in seconds"
     )
 
     @property
@@ -103,12 +122,26 @@ def get_settings() -> Settings:
                 ),
                 groq_language=os.environ.get("GROQ_LANGUAGE"),
                 openai_api_key=os.environ.get("OPENAI_API_KEY"),
+                openai_tts_model=os.environ.get("OPENAI_TTS_MODEL", "gpt-4o-mini-tts"),
+                openai_tts_voice=os.environ.get("OPENAI_TTS_VOICE", "coral"),
+                openai_tts_response_format=os.environ.get(
+                    "OPENAI_TTS_RESPONSE_FORMAT", "opus"
+                ),
+                openai_tts_max_chars=int(
+                    os.environ.get("OPENAI_TTS_MAX_CHARS", "4096")
+                ),
+                openai_tts_rate_limit_per_minute=int(
+                    os.environ.get("OPENAI_TTS_RATE_LIMIT_PER_MINUTE", "5")
+                ),
+                openai_tts_rate_limit_window_sec=int(
+                    os.environ.get("OPENAI_TTS_WINDOW_SEC", "60")
+                ),
             )
         except KeyError as e:
             # В тестах могут отсутствовать переменные окружения
             if "test" in sys.modules or "pytest" in sys.modules:
                 _settings = Settings(  # nosec B106 - тестовые данные для unit-тестов
-                    telegram_bot_token="test_token",
+                    telegram_bot_token="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
                     groq_api_key="test_key",
                     public_base_url="https://test.com",
                     webhook_secret="test_secret",

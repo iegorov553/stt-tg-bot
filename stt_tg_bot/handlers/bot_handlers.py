@@ -8,15 +8,27 @@ from aiogram import Bot, Dispatcher, F, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from stt_tg_bot.config.settings import settings
 from stt_tg_bot.services.groq_client import (
     GroqServiceUnavailableError,
     GroqTimeout,
     GroqUnsupportedFormatError,
     transcribe_with_fallback,
 )
-from stt_tg_bot.utils.access_control import check_message_access, send_access_denied_message
+from stt_tg_bot.services.openai_tts_client import (
+    OpenAITtsClient,
+    OpenAITtsConfigError,
+    OpenAITtsRequestError,
+    OpenAITtsServiceError,
+)
+from stt_tg_bot.utils.access_control import (
+    check_message_access,
+    send_access_denied_message,
+)
 from stt_tg_bot.utils.messages import MESSAGES
+from stt_tg_bot.utils.rate_limiter import SlidingWindowRateLimiter
 from stt_tg_bot.utils.text_chunks import TELEGRAM_MAX_MESSAGE_LENGTH, split_text
+from stt_tg_bot.utils.tts_text import TtsTextError, prepare_tts_text
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +36,26 @@ router = Router()
 
 CHUNK_HEADER_TEMPLATE = "📝 Часть {current}/{total}:\n\n"
 CHUNK_HEADER_RESERVE = len("📝 Часть 999/999:\n\n")
+
+tts_rate_limiter = SlidingWindowRateLimiter(
+    max_calls=settings.openai_tts_rate_limit_per_minute,
+    window_seconds=settings.openai_tts_rate_limit_window_sec,
+)
+tts_client = OpenAITtsClient()
+
+
+def is_forwarded_message(message: Message) -> bool:
+    """Проверяет, является ли сообщение пересланным."""
+    forward_fields = (
+        "forward_from",
+        "forward_from_chat",
+        "forward_sender_name",
+        "forward_signature",
+        "forward_date",
+        "forward_origin",
+        "is_automatic_forward",
+    )
+    return any(getattr(message, field, None) for field in forward_fields)
 
 
 @router.message(Command("start"))  # type: ignore[misc]
@@ -242,8 +274,10 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                     # Удаляем временный файл
                     try:
                         file_path.unlink()
-                    except Exception:
-                        pass  # Игнорируем ошибки удаления
+                    except Exception as exc:
+                        logger.warning(
+                            "Не удалось удалить временный файл расшифровки: %s", exc
+                        )
 
             else:
                 # Отправляем обычным сообщением для коротких текстов
@@ -296,6 +330,88 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                 await processing_message.edit_text(MESSAGES["general_error"])
             except Exception:  # nosec B110 - игнорируем ошибки UI для стабильности
                 pass  # Игнорируем ошибки при редактировании сообщения
+
+
+@router.message(F.text)  # type: ignore[misc]
+async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
+    """
+    Обработчик пересланных текстовых сообщений для озвучки.
+
+    Args:
+        message: Сообщение пользователя
+        bot: Экземпляр бота
+    """
+    if not check_message_access(message):
+        await send_access_denied_message(message)
+        return
+
+    if not message.text:
+        return
+
+    if not is_forwarded_message(message):
+        return
+
+    if not settings.openai_api_key:
+        await message.reply(MESSAGES["tts_missing_api_key"])
+        return
+
+    prepared = prepare_tts_text(message.text, max_chars=settings.openai_tts_max_chars)
+    if prepared.error == TtsTextError.EMPTY:
+        await message.reply(MESSAGES["tts_empty_text"])
+        return
+    if prepared.error == TtsTextError.TOO_LONG:
+        await message.reply(
+            MESSAGES["tts_text_too_long"].format(
+                max_chars=settings.openai_tts_max_chars
+            )
+        )
+        return
+    if prepared.text is None:
+        await message.reply(MESSAGES["tts_general_error"])
+        return
+
+    if not message.from_user:
+        return
+
+    if not tts_rate_limiter.allow(str(message.from_user.id)):
+        await message.reply(MESSAGES["tts_rate_limited"])
+        return
+
+    processing_message = await message.reply(MESSAGES["tts_processing"])
+
+    await bot.send_chat_action(chat_id=message.chat.id, action="record_voice")
+
+    temp_path: Path | None = None
+    try:
+        audio_bytes = await tts_client.synthesize(prepared.text)
+
+        with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
+            temp_file.write(audio_bytes)
+
+        from aiogram.types import FSInputFile
+
+        voice = FSInputFile(temp_path, filename="voice.ogg")
+
+        await processing_message.delete()
+        await message.answer_voice(voice)
+
+    except OpenAITtsConfigError:
+        await processing_message.edit_text(MESSAGES["tts_missing_api_key"])
+
+    except OpenAITtsRequestError:
+        await processing_message.edit_text(MESSAGES["tts_request_error"])
+
+    except OpenAITtsServiceError:
+        await processing_message.edit_text(MESSAGES["tts_service_unavailable"])
+
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при озвучке: {e}")
+        await processing_message.edit_text(MESSAGES["tts_general_error"])
+
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink()
 
 
 @router.message()  # type: ignore[misc]

@@ -1,10 +1,11 @@
 # STT Telegram Bot
 
-A Speech-to-Text Telegram bot using Groq Whisper API for audio transcription.
+A Speech-to-Text Telegram bot using Groq Whisper API for audio transcription, with optional Text-to-Speech via OpenAI.
 
 ## Features
 
 - 🎤 **Audio Transcription**: Supports voice messages, audio files, and documents
+- 🔊 **Text-to-Speech**: Forward text posts and receive voice messages (OpenAI TTS)
 - 🌐 **Multiple Formats**: OGG, OPUS, MP3, WAV, M4A and more
 - 🌍 **Automatic Language Detection**: Recognizes any language supported by Groq Whisper
 - 🚀 **Fast Processing**: Groq Whisper Large V3 Turbo with fallback support
@@ -20,6 +21,7 @@ A Speech-to-Text Telegram bot using Groq Whisper API for audio transcription.
 - Python 3.11+
 - Telegram Bot Token
 - Groq API Key
+- OpenAI API Key (required for TTS)
 
 ### Installation
 
@@ -69,11 +71,25 @@ poetry run python -m stt_tg_bot.main
 - `GROQ_MODEL_PRIMARY`: Primary model (default: `whisper-large-v3-turbo`)
 - `GROQ_MODEL_FALLBACK`: Fallback model (default: `whisper-large-v3`)
 - `GROQ_LANGUAGE`: Optional language override for transcription (default: auto-detect)
+- `OPENAI_API_KEY`: OpenAI API key for summaries and TTS (optional but required for TTS)
+- `OPENAI_TTS_MODEL`: OpenAI TTS model (default: `gpt-4o-mini-tts`)
+- `OPENAI_TTS_VOICE`: OpenAI TTS voice (default: `coral`)
+- `OPENAI_TTS_RESPONSE_FORMAT`: OpenAI TTS audio format (default: `opus`)
+- `OPENAI_TTS_MAX_CHARS`: Max characters per TTS request (default: `4096`)
+- `OPENAI_TTS_RATE_LIMIT_PER_MINUTE`: TTS requests per minute (default: `5`)
+- `OPENAI_TTS_WINDOW_SEC`: Rate limit window in seconds (default: `60`)
 
 ## Commands
 
 - `/start` - Start the bot and get welcome message
 - `/help` - Get help information
+
+## Text-to-Speech Usage
+
+- Forward a text message from any channel/chat to the bot
+- The bot will reply with a voice message (OGG/Opus)
+- Emoji are removed before synthesis
+- Limits: 4096 characters and 5 requests per minute by default
 
 ## Development
 
@@ -103,6 +119,17 @@ poetry run mypy stt_tg_bot/
 
 # Security check
 poetry run bandit -r stt_tg_bot/
+
+# Dependency audit (known aiohttp CVEs are ignored; see SECURITY.md)
+poetry run pip-audit \
+  --ignore-vuln CVE-2025-69223 \
+  --ignore-vuln CVE-2025-69224 \
+  --ignore-vuln CVE-2025-69225 \
+  --ignore-vuln CVE-2025-69226 \
+  --ignore-vuln CVE-2025-69227 \
+  --ignore-vuln CVE-2025-69228 \
+  --ignore-vuln CVE-2025-69229 \
+  --ignore-vuln CVE-2025-69230
 
 # Run all quality checks
 poetry run pre-commit run --all-files
