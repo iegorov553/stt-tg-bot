@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 from aiogram import Bot, Dispatcher, F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -395,8 +396,15 @@ async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
 
         voice = FSInputFile(temp_path, filename="voice.ogg")
 
+        try:
+            await message.answer_voice(voice)
+        except TelegramBadRequest as exc:
+            if "VOICE_MESSAGES_FORBIDDEN" not in str(exc):
+                raise
+            audio = FSInputFile(temp_path, filename="audio.ogg")
+            await message.answer_audio(audio)
+
         await processing_message.delete()
-        await message.answer_voice(voice)
 
     except OpenAITtsConfigError:
         await processing_message.edit_text(MESSAGES["tts_missing_api_key"])
