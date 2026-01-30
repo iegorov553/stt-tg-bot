@@ -51,6 +51,12 @@ class TestSettings:
         assert settings.read_timeout_sec == 120
         assert settings.groq_model_primary == "whisper-large-v3-turbo"
         assert settings.groq_model_fallback == "whisper-large-v3"
+        assert settings.openai_tts_model == "gpt-4o-mini-tts"
+        assert settings.openai_tts_voice == "coral"
+        assert settings.openai_tts_response_format == "opus"
+        assert settings.openai_tts_max_chars == 4096
+        assert settings.openai_tts_rate_limit_per_minute == 5
+        assert settings.openai_tts_rate_limit_window_sec == 60
 
     def test_parsed_allowlist(self) -> None:
         """Test parsed_allowlist property."""

@@ -4,15 +4,19 @@ FROM python:3.11-slim
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Копируем requirements.txt и устанавливаем зависимости
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Устанавливаем Poetry
+RUN pip install --no-cache-dir "poetry==1.8.3"
 
 # Создаём пользователя
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Создаём рабочую директорию
 WORKDIR /app
+
+# Копируем файлы Poetry и устанавливаем зависимости
+COPY pyproject.toml poetry.lock* ./
+RUN poetry config virtualenvs.create false \
+    && poetry install --with dev --no-interaction --no-ansi
 
 # Копируем код приложения
 COPY stt_tg_bot/ ./stt_tg_bot/

@@ -8,6 +8,7 @@ import pytest
 try:
     from aiogram.types import User
 except ModuleNotFoundError:  # pragma: no cover - executed only when aiogram absent
+
     @dataclass
     class User:
         """Minimal stub to satisfy tests when aiogram is unavailable."""

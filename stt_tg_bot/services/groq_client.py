@@ -73,18 +73,12 @@ class GroqWhisperClient:
                 # Читаем содержимое файла для передачи в Groq API
                 file_content = await audio_file.read()
 
-                request_payload: dict[str, object] = {
-                    "file": (audio_file_path.name, file_content),
-                    "model": model,
-                    "response_format": "text",
-                }
-
                 language = getattr(settings, "groq_language", None)
-                if language:
-                    request_payload["language"] = language
-
                 transcription = await self.client.audio.transcriptions.create(
-                    **request_payload
+                    file=(audio_file_path.name, file_content),
+                    model=model,
+                    response_format="text",
+                    **({"language": language} if language else {}),
                 )
 
                 transcription_text = str(transcription)
