@@ -26,6 +26,7 @@ from stt_tg_bot.utils.access_control import (
     send_access_denied_message,
 )
 from stt_tg_bot.utils.messages import MESSAGES
+from stt_tg_bot.utils.message_text import get_message_text
 from stt_tg_bot.utils.rate_limiter import SlidingWindowRateLimiter
 from stt_tg_bot.utils.text_chunks import TELEGRAM_MAX_MESSAGE_LENGTH, split_text
 from stt_tg_bot.utils.tts_text import TtsTextError, prepare_tts_text
@@ -332,7 +333,7 @@ async def handle_audio(message: Message, bot: Bot) -> None:
                 pass  # Игнорируем ошибки при редактировании сообщения
 
 
-@router.message(F.text)  # type: ignore[misc]
+@router.message(F.text | F.caption)  # type: ignore[misc]
 async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
     """
     Обработчик пересланных текстовых сообщений для озвучки.
@@ -345,7 +346,8 @@ async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
         await send_access_denied_message(message)
         return
 
-    if not message.text:
+    raw_text = get_message_text(message)
+    if not raw_text:
         return
 
     if not is_forwarded_message(message):
@@ -355,7 +357,7 @@ async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
         await message.reply(MESSAGES["tts_missing_api_key"])
         return
 
-    prepared = prepare_tts_text(message.text, max_chars=settings.openai_tts_max_chars)
+    prepared = prepare_tts_text(raw_text, max_chars=settings.openai_tts_max_chars)
     if prepared.error == TtsTextError.EMPTY:
         await message.reply(MESSAGES["tts_empty_text"])
         return
