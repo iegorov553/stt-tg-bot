@@ -402,7 +402,13 @@ async def handle_forwarded_text_tts(message: Message, bot: Bot) -> None:
             if "VOICE_MESSAGES_FORBIDDEN" not in str(exc):
                 raise
             audio = FSInputFile(temp_path, filename="audio.ogg")
-            await message.answer_audio(audio)
+            try:
+                await message.answer_audio(audio)
+            except TelegramBadRequest as audio_exc:
+                if "VOICE_MESSAGES_FORBIDDEN" not in str(audio_exc):
+                    raise
+                document = FSInputFile(temp_path, filename="audio.ogg")
+                await message.answer_document(document)
 
         await processing_message.delete()
 
